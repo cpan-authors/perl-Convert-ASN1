@@ -358,8 +358,43 @@ my $pos;
 my $last_pos;
 my @stacked;
 
+# Pre-process ASN.1 text to handle MIB-style constructs that the parser
+# does not natively support.  Unsupported constructs are either stripped
+# (IMPORTS, module wrapper, constraints) or transformed into a form the
+# parser can accept (OBJECT IDENTIFIER value assignments).
+sub _preprocess {
+  my $text = shift;
+
+  # 1. Strip IMPORTS section: IMPORTS ... ;
+  $text =~ s/\bIMPORTS\b[^;]*;//sg;
+
+  # 2. Strip MACRO definition blocks: Name MACRO ::= BEGIN ... END
+  $text =~ s/\b[\w-]+\s+MACRO\s*::=\s*BEGIN\b.*?\bEND\b//sg;
+
+  # 3. Strip DEFINITIONS ::= BEGIN module header (keep body).
+  #    Also strip the matching END module terminator.
+  if ($text =~ s/\b[\w-]+\s+DEFINITIONS\b[^:]*::=\s*BEGIN\b//sg) {
+    $text =~ s/\bEND\b\s*\z//s;   # trailing END only
+  }
+
+  # 4. Transform OBJECT IDENTIFIER value assignments into simple type
+  #    declarations so the parser can recognise the defined name.
+  #    Before: name OBJECT IDENTIFIER ::= { parent arc ... }
+  #    After:  name ::= OBJECT IDENTIFIER
+  1 while $text =~ s/\b([\w-]+)\s+(OBJECT\s+IDENTIFIER)\s*::=\s*\{[^{}]*\}/$1 ::= $2/g;
+
+  # 5. Strip parenthesised constraint syntax (SIZE, ranges, value sets).
+  #    Constraints are purely informational for encoding/decoding purposes.
+  #    Preserve simple (NUMBER) tokens used for ENUMERATED name-value pairs.
+  #    Process from inner-most outward by repeating until no change.
+  1 while $text =~ s/\((?!\s*\d+\s*\))[^()]*\)//g;
+
+  $text;
+}
+
 sub parse {
-  local(*asn) = \($_[0]);
+  my $asn_text = _preprocess($_[0]);
+  local(*asn) = \$asn_text;
   $tagdefault = $_[1] eq 'EXPLICIT' ? 1 : 0;
   ($pos,$last_pos,@stacked) = ();
 
