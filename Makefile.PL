@@ -20,6 +20,11 @@ my %WriteMakefileArgs = (
     "Test::More" => "0.90"
   },
   "VERSION" => "0.34",
+  "dist" => {
+    # Use POSIX ustar format for maximum portability across platforms,
+    # including Windows tar implementations (fixes GitHub issue #17).
+    TARFLAGS => '--format=ustar -cvf',
+  },
   "test" => {
     "TESTS" => "t/*.t"
   }
