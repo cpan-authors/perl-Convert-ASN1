@@ -120,7 +120,7 @@ sub asn_dump {
     for ($label) { # switch
       /^(INTEGER|ENUM)/ && do {
 	Convert::ASN1::_dec_integer({},[],{},$tmp,$_[0],$pos,$len);
-	printf " = %d\n",$tmp;
+	printf " = %s\n",$tmp;
         last;
       };
 
