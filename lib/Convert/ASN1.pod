@@ -471,6 +471,72 @@ These are SEQUENCE {...}, SET {...} and CHOICE. In each case if the element is n
 given a name then the elements inside the {...} will share the same namespace as
 the elements outside of the {...}.
 
+For example, an unnamed SEQUENCE nested inside another SEQUENCE causes its children
+to be merged into the parent's namespace rather than placed in a sub-hash:
+
+  # ASN.1 - unnamed inner SEQUENCE
+  SEQUENCE {
+    id   INTEGER,
+    SEQUENCE {
+      name OCTET STRING,
+      flag BOOLEAN
+    }
+  }
+
+  # Perl - all elements share the same namespace
+  { id => 42, name => "test", flag => 1 }
+
+  # encode:
+  $asn->encode(id => 42, name => "test", flag => 1)
+
+  # decode returns:
+  { id => 42, name => "test", flag => 1 }
+
+This is in contrast to a I<named> inner SEQUENCE, where the inner elements are
+grouped under a sub-hash keyed by the sequence's name:
+
+  # ASN.1 - named inner sequence
+  SEQUENCE {
+    id  INTEGER,
+    sub SEQUENCE {
+      name OCTET STRING,
+      flag BOOLEAN
+    }
+  }
+
+  # Perl - inner elements in a sub-hash
+  { id => 42, sub => { name => "test", flag => 1 } }
+
+The same namespace-sharing behaviour applies to unnamed SET:
+
+  # ASN.1 - unnamed inner SET
+  SEQUENCE {
+    id  INTEGER,
+    SET {
+      name OCTET STRING,
+      flag BOOLEAN
+    }
+  }
+
+  # Perl - all elements share the same namespace
+  { id => 42, name => "test", flag => 1 }
+
+And to unnamed CHOICE, where the selected alternative is placed directly in the
+parent namespace rather than inside a sub-hash keyed by the CHOICE's name:
+
+  # ASN.1 - unnamed CHOICE
+  SEQUENCE {
+    id     INTEGER,
+    CHOICE {
+      label  OCTET STRING,
+      active BOOLEAN
+    }
+  }
+
+  # Perl - the chosen alternative appears in the parent namespace
+  { id => 1, label => "foo" }    # when OCTET STRING alternative is chosen
+  { id => 1, active => 1 }       # when BOOLEAN alternative is chosen
+
 =head1 TODO
 
 =over 4
