@@ -429,8 +429,18 @@ sub asn_tag {
 
 
 BEGIN {
+  # Try to load the XS extension for faster tag/length processing.
+  # If XS is available, it overrides the pure-Perl helper functions.
+  # When XS also defines &_encode, the pure-Perl encode/decode modules
+  # are skipped entirely.
+  local $SIG{__DIE__};
+  eval {
+    require XSLoader;
+    XSLoader::load(__PACKAGE__, $VERSION);
+  };
+
   # When we have XS &_encode will be defined by the XS code
-  # so will all the subs in these required packages 
+  # so will all the subs in these required packages
   unless (defined &_encode) {
     require Convert::ASN1::_decode;
     require Convert::ASN1::_encode;
