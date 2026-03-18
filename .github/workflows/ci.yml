@@ -17,7 +17,7 @@ jobs:
       - id: perl-versions
         uses: perl-actions/perl-versions@v2
         with:
-          since-perl: 5.30
+          since-perl: 5.8
           with-devel: false
 
   test:
