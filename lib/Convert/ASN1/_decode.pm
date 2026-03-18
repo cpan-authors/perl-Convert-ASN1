@@ -41,6 +41,18 @@ my @decode = (
 my @ctr;
 @ctr[opBITSTR, opSTRING, opUTF8] = (\&_ctr_bitstring,\&_ctr_string,\&_ctr_string);
 
+# Per X.690: inner segments of constructed primitives always use the universal
+# primitive tag, not any implicit/application tag that may wrap the outer value.
+#   8.6.4.1: BIT STRING segments use UNIVERSAL 3 (BIT STRING)
+#   8.7.3.2: OCTET STRING segments use UNIVERSAL 4 (OCTET STRING)
+#   8.23.3:  other string types (incl. UTF8String) also use UNIVERSAL 4
+my @ctr_inner_tag;
+@ctr_inner_tag[opBITSTR, opSTRING, opUTF8] = (
+  asn_encode_tag(ASN_BIT_STR),   # BIT STRING inner segments (X.690 8.6.4.1)
+  asn_encode_tag(ASN_OCTET_STR), # OCTET STRING inner segments (X.690 8.7.3.2)
+  asn_encode_tag(ASN_OCTET_STR), # UTF8String inner segments are OCTET STRING (X.690 8.23.3)
+);
+
 
 sub _decode {
   my ($optn, $ops, $stash, $pos, $end, $seqof, $larr) = @_;
@@ -83,9 +95,15 @@ sub _decode {
 	  if ($tag eq ($op->[cTAG] | pack("C",ASN_CONSTRUCTOR))
 	      and my $ctr = $ctr[$op->[cTYPE]]) 
 	  {
+	    # When the outer value carries an implicit tag, inner primitive segments
+	    # still use the universal primitive tag (X.690 8.6.4.1, 8.7.3.2, 8.23.3).
+	    my $inner_tag = $ctr_inner_tag[$op->[cTYPE]];
+	    my $inner_op = $op->[cTAG] eq $inner_tag ? $op : do {
+	      my $o = [@$op]; $o->[cTAG] = $inner_tag; $o;
+	    };
 	    _decode(
 	      $optn,
-	      [$op],
+	      [$inner_op],
 	      undef,
 	      $npos,
 	      $npos+$len,
