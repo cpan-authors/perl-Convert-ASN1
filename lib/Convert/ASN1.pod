@@ -122,6 +122,16 @@ converted into a big integer object. This option controls the big
 integer class into which the objects will be blessed. The default
 is to use Math::BigInt
 
+A substitute class must provide a class method C<new($value)> that accepts
+a string or integer, and must implement the following overloaded operators
+so that they work between instances and between instances and plain integers:
+C<+>, C<->, C<*>, C</>, C<%>, C<< < >>, C<!=>. The C<abs()> built-in must
+also work on instances (i.e. the class should overload C<abs>).
+Math::BigInt-specific methods such as C<binc()> or C<bneg()> are B<not>
+required. Any class from the L<Math::BigInt> family (for example
+L<Math::BigInt::GMP> used via C<< Math::BigInt->new(...) >> with a GMP
+backend) will satisfy these requirements automatically.
+
 =back
 
 Decode options
@@ -157,6 +167,10 @@ If during decoding any big integers are discovered (integers greater
 than 32 bits), they will be decoded into big integer objects. This option
 controls the big integer class into which the objects will be blessed.
 The default is to use Math::BigInt.
+
+A substitute class must satisfy the same interface as described under the
+encoding C<bigint> option above: a C<new($value)> class method and overloaded
+C<+>, C<->, C<*>, C</>, C<%>, C<< < >>, C<!=>, and C<abs> operators.
 
 =item null
 
