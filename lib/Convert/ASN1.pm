@@ -47,7 +47,7 @@ BEGIN {
   @opName = qw(
     opUNKNOWN opBOOLEAN opINTEGER opBITSTR opSTRING opNULL opOBJID opREAL
     opSEQUENCE opEXPLICIT opSET opUTIME opGTIME opUTF8 opANY opCHOICE opROID opBCD
-    opEXTENSIONS
+    opEXTENSIONS opBMPSTR opUNISTR
   );
 
   foreach my $l (\@opParts, \@opName) {
