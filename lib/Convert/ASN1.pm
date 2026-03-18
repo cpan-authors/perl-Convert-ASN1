@@ -147,6 +147,49 @@ sub find {
 }
 
 
+sub macro_for_application_tag {
+  my ($self, $tag) = @_;
+  my $want = asn_encode_tag(asn_tag(ASN_APPLICATION, $tag));
+  # Mask out the constructor/primitive bit for comparison
+  my $want_masked = $want;
+  substr($want_masked, 0, 1) = chr(ord(substr($want_masked, 0, 1)) & ~ASN_CONSTRUCTOR);
+  foreach my $name (keys %{$self->{tree}}) {
+    my $op = $self->{tree}{$name}[0] or next;
+    my $op_tag = $op->[cTAG];
+    next unless defined $op_tag && length $op_tag;
+    my $op_masked = $op_tag;
+    substr($op_masked, 0, 1) = chr(ord(substr($op_masked, 0, 1)) & ~ASN_CONSTRUCTOR);
+    return $name if $want_masked eq $op_masked;
+  }
+  return undef;
+}
+
+
+sub macro_for_pdu {
+  my ($self, $pdu) = @_;
+  return undef unless defined $pdu && length $pdu;
+  # Verify the PDU starts with an APPLICATION class tag
+  my $first = ord(substr($pdu, 0, 1));
+  return undef unless ($first & 0xC0) == ASN_APPLICATION;
+  my ($n) = asn_decode_tag($pdu);
+  return undef unless $n;
+  my $pdu_tag = substr($pdu, 0, $n);
+  # Mask out constructor bit of first byte for comparison
+  my $pdu_masked = $pdu_tag;
+  substr($pdu_masked, 0, 1) = chr(ord(substr($pdu_masked, 0, 1)) & ~ASN_CONSTRUCTOR);
+  foreach my $name (keys %{$self->{tree}}) {
+    my $op = $self->{tree}{$name}[0] or next;
+    my $op_tag = $op->[cTAG];
+    next unless defined $op_tag && length $op_tag;
+    next unless length $op_tag == $n;
+    my $op_masked = $op_tag;
+    substr($op_masked, 0, 1) = chr(ord(substr($op_masked, 0, 1)) & ~ASN_CONSTRUCTOR);
+    return $name if $pdu_masked eq $op_masked;
+  }
+  return undef;
+}
+
+
 sub prepare {
   my $self = shift;
   my $asn  = shift;
