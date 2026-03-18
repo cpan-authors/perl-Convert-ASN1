@@ -13,14 +13,46 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       perl-versions: ${{ steps.perl-versions.outputs.perl-versions }}
+      recent-perl-versions: ${{ steps.recent-perl-versions.outputs.perl-versions }}
     steps:
       - id: perl-versions
         uses: perl-actions/perl-versions@v2
         with:
           since-perl: 5.8
           with-devel: false
+      - id: recent-perl-versions
+        uses: perl-actions/perl-versions@v2
+        with:
+          since-perl: 5.30
+          with-devel: false
 
-  test:
+  linux:
+    needs: perl-versions
+    runs-on: ubuntu-latest
+    name: "ubuntu-latest / Perl ${{ matrix.perl-version }}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        perl-version: ${{ fromJson(needs.perl-versions.outputs.perl-versions) }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl-version }}
+      - run: perl -V
+      - name: Install Dependencies
+        run: cpanm --installdeps .
+      - name: Build Module
+        run: |
+          perl Makefile.PL
+          make
+      - name: Run Tests
+        run: prove -lv t
+
+  non-linux:
     needs: perl-versions
     runs-on: ${{ matrix.os }}
     name: "${{ matrix.os }} / Perl ${{ matrix.perl-version }}"
@@ -28,8 +60,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        perl-version: ${{ fromJson(needs.perl-versions.outputs.perl-versions) }}
+        os: [macos-latest, windows-latest]
+        perl-version: ${{ fromJson(needs.perl-versions.outputs.recent-perl-versions) }}
 
     steps:
       - uses: actions/checkout@v4
