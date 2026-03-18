@@ -12,6 +12,9 @@ BEGIN {
   eval { require bytes and 'bytes'->import };
 }
 
+use Config;
+my $_iv_bytes = $Config{ivsize};  # native integer size: 4 (32-bit) or 8 (64-bit)
+
 # These are the subs that do the decode, they are called with
 # 0      1    2       3     4
 # $optn, $op, $stash, $var, $buf
@@ -280,8 +283,12 @@ sub _dec_integer {
 
   my $buf = substr($_[4],$_[5],$_[6]);
   my $tmp = unpack("C",$buf) & 0x80 ? pack("C",255) : pack("C",0);
-  if ($_[6] > 4) {
+  if ($_[6] > $_iv_bytes) {
       $_[3] = os2ip($buf, $_[0]->{decode_bigint} || 'Math::BigInt');
+  } elsif ($_[6] > 4) {
+      # On 64-bit Perl ($_iv_bytes == 8): decode 5-8 byte integers natively.
+      # Pad to 8 bytes with sign extension byte, then unpack as big-endian signed 64-bit.
+      $_[3] = unpack("q>", $tmp x (8 - $_[6]) . $buf);
   } else {
       # N unpacks an unsigned value
       $_[3] = unpack("l",pack("l",unpack("N", $tmp x (4-$_[6]) . $buf)));
