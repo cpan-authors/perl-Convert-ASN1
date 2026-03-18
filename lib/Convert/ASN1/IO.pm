@@ -103,7 +103,7 @@ error:
     $_[1] = undef;
 }
 
-sub asn_read { # $fh, $buffer, $offset
+sub asn_read { # $fh, $buffer, $offset, $timeout
 
   # We need to read one packet, and exactly only one packet.
   # So we have to read the first few bytes one at a time, until
@@ -128,12 +128,23 @@ sub asn_read { # $fh, $buffer, $offset
   my $ch;
   my $n;
   my $e;
-  
+
+  # Optional timeout (4th arg): use select() before each sysread to avoid
+  # hanging indefinitely when a network connection is silently dropped.
+  my $timeout = $_[3];
+  my $rin = '';
+  if (defined $timeout) {
+    vec($rin, fileno($_[0]), 1) = 1;
+  }
 
   while(1) {
     $need = ($pos + ($depth * 2)) || 2;
 
     while(($n = $need - length $_[1]) > 0) {
+      if (defined $timeout) {
+        CORE::select(my $r=$rin, undef, undef, $timeout)
+          or do { $@ = "Timeout"; return undef };
+      }
       $e = sysread($_[0],$_[1],$n,length $_[1]) or
 	goto READ_ERR;
     }
@@ -145,6 +156,10 @@ sub asn_read { # $fh, $buffer, $offset
       do {
         $need++;
 	while(($n = $need - length $_[1]) > 0) {
+          if (defined $timeout) {
+            CORE::select(my $r=$rin, undef, undef, $timeout)
+              or do { $@ = "Timeout"; return undef };
+          }
 	  $e = sysread($_[0],$_[1],$n,length $_[1]) or
 	      goto READ_ERR;
 	}
@@ -155,6 +170,10 @@ sub asn_read { # $fh, $buffer, $offset
     $need = $pos + 1;
 
     while(($n = $need - length $_[1]) > 0) {
+      if (defined $timeout) {
+        CORE::select(my $r=$rin, undef, undef, $timeout)
+          or do { $@ = "Timeout"; return undef };
+      }
       $e = sysread($_[0],$_[1],$n,length $_[1]) or
 	  goto READ_ERR;
     }
@@ -169,6 +188,10 @@ sub asn_read { # $fh, $buffer, $offset
       $need = $pos + $len;
 
       while(($n = $need - length $_[1]) > 0) {
+        if (defined $timeout) {
+          CORE::select(my $r=$rin, undef, undef, $timeout)
+            or do { $@ = "Timeout"; return undef };
+        }
 	$e = sysread($_[0],$_[1],$n,length $_[1]) or
 	    goto READ_ERR;
       }
@@ -189,6 +212,10 @@ sub asn_read { # $fh, $buffer, $offset
   }
 
   while(($n = $pos - length $_[1]) > 0) {
+    if (defined $timeout) {
+      CORE::select(my $r=$rin, undef, undef, $timeout)
+        or do { $@ = "Timeout"; return undef };
+    }
     $e = sysread($_[0],$_[1],$n,length $_[1]) or
       goto READ_ERR;
   }
