@@ -278,12 +278,20 @@ sub decode {
       $script = $child->[cCHILD];
     }
 
+    # When block_size is configured, CDR buffers may have trailing null bytes
+    # as padding to reach a fixed block size. Strip them by adjusting the
+    # effective end position without copying the buffer.
+    my $end = length $_[0];
+    if ($self->{options}{decode_block_size}) {
+      $end-- while $end > 0 && substr($_[0], $end - 1, 1) eq "\x00";
+    }
+
     _decode(
 	$self->{options},
 	$self->{script},
 	$stash,
 	0,
-	length $_[0], 
+	$end,
 	undef,
 	{},
 	$_[0]);
