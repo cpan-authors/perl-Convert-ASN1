@@ -7,7 +7,7 @@
 use Convert::ASN1;
 BEGIN { require './t/funcs.pl' }
 
-print "1..2\n";
+print "1..4\n";
 
 {    # github issue 8
 
@@ -54,6 +54,16 @@ ASN1
   stest 1, "decode error 85 87", $err;
 
   btest 2, !!$asn_ocspreq->decode(substr($OCSPREQDER, 0, -2));
+
+  # allow_trailing option: should succeed even with 2 extra bytes at end
+  my $result_trailing = $asn_ocspreq->decode($OCSPREQDER, {allow_trailing => 1});
+  btest 3, defined($result_trailing);
+
+  # result with allow_trailing should be same as decoding clean buffer
+  my $result_clean = $asn_ocspreq->decode(substr($OCSPREQDER, 0, -2));
+  use Data::Dumper;
+  local $Data::Dumper::Sortkeys = 1;
+  stest 4, Dumper($result_clean), Dumper($result_trailing);
 
 }
 

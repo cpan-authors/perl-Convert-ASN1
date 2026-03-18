@@ -260,6 +260,7 @@ sub asn_encode_length {
 
 sub decode {
   my $self  = shift;
+  my $opts  = ref($_[1]) eq 'HASH' ? $_[1] : {};
   my $ret;
 
   local $SIG{__DIE__};
@@ -284,6 +285,19 @@ sub decode {
     my $end = length $_[0];
     if ($self->{options}{decode_block_size}) {
       $end-- while $end > 0 && substr($_[0], $end - 1, 1) eq "\x00";
+    }
+    if ($opts->{allow_trailing}) {
+      # When allow_trailing is set, compute the end of the outermost TLV so
+      # that any bytes beyond it are silently ignored rather than causing a
+      # "decode error $pos $end" failure.
+      my ($tb) = asn_decode_tag($_[0]);
+      if (defined $tb) {
+        my ($lb, $len) = asn_decode_length(substr($_[0], $tb));
+        if (defined $lb && defined $len && $len >= 0) {
+          my $obj_end = $tb + $lb + $len;
+          $end = $obj_end if $obj_end <= $end;
+        }
+      }
     }
 
     _decode(
