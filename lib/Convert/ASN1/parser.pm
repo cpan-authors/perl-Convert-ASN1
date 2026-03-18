@@ -334,7 +334,8 @@ State4: {
 {
 		  $yyval=$yyvs[$yyvsp-3];
 		  $yyval->{$yyvs[$yyvsp-2]} = [$yyvs[$yyvsp-0]];
-		
+		  $yyval->{''} = $yyval->{$yyvs[$yyvsp-2]};
+
 last switch;
 } }
 State5: {
