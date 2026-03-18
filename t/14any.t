@@ -8,7 +8,7 @@ BEGIN { require './t/funcs.pl'}
 
 use Convert::ASN1;
 
-print "1..21\n";
+print "1..26\n";
 
 btest 1, $asn_str=Convert::ASN1->new or warn $asn->error;
 btest 2, $asn_str->prepare("string STRING") or warn $asn->error;
@@ -66,3 +66,29 @@ rtest 19, [pack("H*","020109"),pack("H*","30800201090000")], $ret;
 
 btest 20, $ret = $asn->find('Test2')->decode($result);
 stest 21, $result, $ret;
+
+# Regression test for GitHub issue #27:
+# SET OF ANY DEFINED BY with unregistered OIDs should return raw bytes without warning.
+# The inner ANY in "SET OF ANY DEFINED BY" has no cVAR (anonymous element), so using
+# it as a hash key in the handlers lookup must be guarded with defined().
+btest 22, my $asn3 = Convert::ASN1->new;
+btest 23, $asn3->prepare(q(
+    Attribute ::= SEQUENCE {
+      type   OBJECT IDENTIFIER,
+      values SET OF ANY DEFINED BY type}
+));
+$asn3->registeroid("1.1.1.1", $asn_str); # register only 1.1.1.1, not 1.1.1.2
+
+# Manually constructed: Attribute { type=1.1.1.2 (unregistered), values=[OCTET STRING "hello"] }
+# 30 0e           SEQUENCE (14 bytes)
+#   06 03 29 01 02  OID 1.1.1.2
+#   31 07           SET (7 bytes)
+#     04 05 68 65 6c 6c 6f  OCTET STRING "hello"
+my $result3 = pack("H*", "300e06032901023107040568656c6c6f");
+my $warnings3 = '';
+local $SIG{__WARN__} = sub { $warnings3 .= $_[0] };
+btest 24, my $ret3 = $asn3->find("Attribute")->decode($result3);
+btest 25, !$warnings3; # must not warn "Use of uninitialized value"
+# values[0] should be raw bytes (the unregistered OID element)
+my $raw_elem = pack("H*", "040568656c6c6f"); # OCTET STRING "hello"
+stest 26, $raw_elem, $ret3->{values}[0]; # raw bytes for unregistered OID
