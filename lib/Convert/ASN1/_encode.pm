@@ -8,10 +8,8 @@ use strict;
 use warnings;
 
 BEGIN {
-  unless (CHECK_UTF8) {
-    local $SIG{__DIE__};
-    eval { require bytes } and 'bytes'->import
-  }
+  local $SIG{__DIE__};
+  eval { require bytes and 'bytes'->import };
 }
 
 # These are the subs which do the encoding, they are called with
