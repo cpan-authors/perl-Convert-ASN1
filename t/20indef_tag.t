@@ -59,4 +59,4 @@ btest 7, $asn->prepare(q(
 my $buf3 = "\x30\x80\xa1\x80\x04\x05Hello\x04\x01!\x00\x00\x00\x00";
 
 my $u = $asn->decode($buf3);
-btest 8, defined($u) && $u->{s} eq 'Hello!' or warn($asn->error // '') . " got " . (defined $u ? $u->{s} // 'undef' : 'undef');
+btest 8, defined($u) && $u->{s} eq 'Hello!' or warn(defined($asn->error) ? $asn->error : '') . " got " . (defined $u && defined $u->{s} ? $u->{s} : 'undef');
