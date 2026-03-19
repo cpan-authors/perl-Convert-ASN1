@@ -287,8 +287,19 @@ sub _dec_integer {
       $_[3] = os2ip($buf, $_[0]->{decode_bigint} || 'Math::BigInt');
   } elsif ($_[6] > 4) {
       # On 64-bit Perl ($_iv_bytes == 8): decode 5-8 byte integers natively.
-      # Pad to 8 bytes with sign extension byte, then unpack as big-endian signed 64-bit.
-      $_[3] = unpack("q>", $tmp x (8 - $_[6]) . $buf);
+      # Pad to 8 bytes with sign extension, unpack as two 32-bit unsigned halves,
+      # then combine. Avoids "q>" which requires Perl >= 5.10.
+      my $padded = $tmp x (8 - $_[6]) . $buf;
+      my ($hi, $lo) = unpack("NN", $padded);
+      # Reconstruct signed 64-bit: if high bit is set, value is negative.
+      if ($hi & 0x80000000) {
+          # Negative: compute magnitude via two's complement then negate
+          $hi = ~$hi & 0xFFFFFFFF;
+          $lo = ~$lo & 0xFFFFFFFF;
+          $_[3] = -($hi * 2**32 + $lo + 1);
+      } else {
+          $_[3] = $hi * 2**32 + $lo;
+      }
   } else {
       # N unpacks an unsigned value
       $_[3] = unpack("l",pack("l",unpack("N", $tmp x (4-$_[6]) . $buf)));
