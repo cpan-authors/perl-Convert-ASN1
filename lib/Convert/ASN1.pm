@@ -170,7 +170,7 @@ sub prepare {
   }
 
   $self->{tree} = _pack_struct($tree);
-  $self->{script} = (values %$tree)[0];
+  $self->{script} = $tree->{''} // (values %$tree)[0];
   $self;
 }
 
