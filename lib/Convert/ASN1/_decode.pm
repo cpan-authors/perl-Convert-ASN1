@@ -151,8 +151,11 @@ sub _decode {
 
             my $handler;
             if ($op->[cDEFINE]) {
-              $handler = $optn->{oidtable} && $optn->{oidtable}{$stash->{$op->[cDEFINE]}};
-              $handler ||= $optn->{handlers}{$op->[cVAR]}{$stash->{$op->[cDEFINE]}};
+              my $define_val = $stash->{$op->[cDEFINE]};
+              if (defined $define_val) {
+                $handler = $optn->{oidtable} && $optn->{oidtable}{$define_val};
+                $handler ||= defined($op->[cVAR]) && $optn->{handlers}{$op->[cVAR]}{$define_val};
+              }
             }
 
 	    ($seqof ? $seqof->[$idx++] : ref($stash) eq 'SCALAR' ? $$stash : $stash->{$var})
