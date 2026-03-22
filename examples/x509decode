@@ -13,6 +13,8 @@
 use strict;
 
 use Data::Dumper;
+use MIME::Base64 q/decode_base64/;
+
 $Data::Dumper::Indent=1;
 $Data::Dumper::Quotekeys=1;
 $Data::Dumper::Useqq=1;
@@ -402,6 +404,11 @@ sub decodeCert {
 	my $der_cert = shift;
 	#asn_dump( $der_cert );
 
+    if ($der_cert =~ qr/-----[^-]*-----/) {
+        warn "Attempting to automatically convert from a PEM file";
+        $der_cert =~ s/-----[^-]*-----//gm;
+        $der_cert = decode_base64($der_cert); # or die "Unable to decode base64 from PEM file";
+    }
 	my $cert = $asn_cert->decode($der_cert) or die $asn_cert->error;
 	
 	#extensions
