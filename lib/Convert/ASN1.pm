@@ -398,13 +398,14 @@ sub i2osp {
 sub os2ip {
     my($os, $biclass) = @_;
     eval "require $biclass";
-    my $base = $biclass->new(256);
-    my $result = $biclass->new(0);
+
     my $neg = unpack("C",$os) >= 0x80
       and $os ^= pack("C",255) x length($os);
-    for (unpack("C*",$os)) {
-      $result = ($result * $base) + $_;
-    }
+
+    my $hex_str = unpack 'H*', $os;
+    substr( $hex_str, 0, 0, '0x' );
+    my $result = $biclass->new($hex_str);
+
     return $neg ? ($result + 1) * -1 : $result;
 }
 
