@@ -506,7 +506,8 @@ my $SignerInfos=[]; $SignerInfos->[0] = {
      sid=>{issuerAndSerialNumber=>{issuer=>$tsa_cert->{'tbsCertificate'}->{'issuer'},
            serialNumber=>$tsa_cert->{'tbsCertificate'}->{'serialNumber'},}},
      signedAttrs=>\@SortedAttributes,
-     signatureAlgorithm=>$DigestAlgorithmIdentifiers->[0],
+     #signatureAlgorithm=>$DigestAlgorithmIdentifiers->[0],
+     signatureAlgorithm=>{algorithm=>'1 2 840 113549 1 1 1',parameters=>"\x05\x00"},
      signature=>$tsa_key->sign($TBSattrs),
    };
 # finish the token and response
