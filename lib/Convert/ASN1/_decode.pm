@@ -268,7 +268,11 @@ sub _decode {
 	      next OP;
 	    }
 	  }
-	  die "decode error" unless $op->[cEXT];
+	  if (!$op->[cEXT]) {
+		print STDERR "Convert::ASN1::_decode cEXT was not defined: noSuchInstance\n";
+		$stash->{$op->[cVAR]} = {'noSuchInstance' => 'noSuchInstance'};
+		$pos = $end; # Skip over the rest
+	  }
 	}
 	elsif ($op->[cTYPE] == opEXTENSIONS) {
 	    $pos = $end; # Skip over the rest
