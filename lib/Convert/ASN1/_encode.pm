@@ -38,6 +38,9 @@ my @encode = (
   \&_enc_choice,
   \&_enc_object_id,
   \&_enc_bcd,
+  undef, # EXTENSIONS
+  \&_enc_bmpstring,
+  \&_enc_unistring,
 );
 
 
@@ -409,5 +412,40 @@ sub _enc_bcd {
   $_[4] .= asn_encode_length(length($str) / 2);
   $_[4] .= pack("H*", $str);
 }
+
+
+sub _enc_bmpstring {
+# 0      1    2       3     4     5      6
+# $optn, $op, $stash, $var, $buf, $loop, $path
+# BMPString is UCS-2 Big Endian encoded
+
+  if (CHECK_UTF8) {
+    my $tmp = Encode::encode('UCS-2-BE', $_[3]);
+    $_[4] .= asn_encode_length(length $tmp);
+    $_[4] .= $tmp;
+  }
+  else {
+    $_[4] .= asn_encode_length(length $_[3]);
+    $_[4] .= $_[3];
+  }
+}
+
+
+sub _enc_unistring {
+# 0      1    2       3     4     5      6
+# $optn, $op, $stash, $var, $buf, $loop, $path
+# UniversalString is UCS-4 Big Endian encoded
+
+  if (CHECK_UTF8) {
+    my $tmp = Encode::encode('UCS-4-BE', $_[3]);
+    $_[4] .= asn_encode_length(length $tmp);
+    $_[4] .= $tmp;
+  }
+  else {
+    $_[4] .= asn_encode_length(length $_[3]);
+    $_[4] .= $_[3];
+  }
+}
+
 1;
 
