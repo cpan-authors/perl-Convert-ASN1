@@ -85,8 +85,28 @@ sub _enc_boolean {
 sub _enc_integer {
 # 0      1    2       3     4     5      6
 # $optn, $op, $stash, $var, $buf, $loop, $path
-  if (abs($_[3]) >= 2**31) {
-    my $os = i2osp($_[3], ref($_[3]) || $_[0]->{encode_bigint} || 'Math::BigInt');
+  my $obj = $_[0];
+  my $bi = $obj->{encode_bigint} || 'Math::BigInt';
+
+  if (!ref($_[3]) && $_[3] =~ m/^-?0x/i) {   # number is a hex string starting with 0x or -0x
+    my($os,$len);
+    if ( $bi eq 'twos') {
+      require Carp, Carp::croak("The integer must be valid 2s complement") if index($_[3],'-') == 0;
+      $os = pack('H*', substr($_[3],2));
+      # trim
+      $os =~ s/^\xff{2,}/\xff/;
+      $len = length($os);
+    }
+    else {
+      # number in hex form
+      $os = hex2os($_[3]);
+      $len = length $os;
+    }
+    $_[4] .= asn_encode_length($len);
+    $_[4] .= $os;
+  }
+  elsif (abs($_[3]) >= 2**31) {
+    my $os = i2osp($_[3], ref($_[3]) || $bi);
     my $len = length $os;
     my $msb = (vec($os, 0, 8) & 0x80) ? 0 : 255;
     $len++, $os = pack("C",$msb) . $os if $msb xor $_[3] > 0;

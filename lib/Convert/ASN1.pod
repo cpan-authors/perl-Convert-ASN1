@@ -116,11 +116,35 @@ value and the offset from UTC in seconds.
 
 =item bigint
 
-If during encoding an value greater than 32 bits is discovered and
-is not already a big integer object, then the value will first be
-converted into a big integer object. This option controls the big
-integer class into which the objects will be blessed. The default
-is to use Math::BigInt
+If during encoding a value greater than 32 bits is discovered, this controls
+how the value is handled.  Either a big integer class may be specified or 
+twos/hex may be used.  The default is to use the class C<Math::BigInt>.  If an
+integer is passed in hex format (i.e. starting with 0x), but the twos option
+is not specified, the value will be converted to a 2s complement integer per
+the ASN.1 encoding rules.
+
+=over 4
+
+=item I<BigInt::Class>
+
+If the value is not already a big integer object, then the value will first
+be converted into a big integer object. This option controls the big
+integer class into which the objects will be blessed.  Any bigint class which
+properly overloads common math operators should function.
+The default is C<Math::BigInt>.
+
+=item twos
+
+When encoding an integer, if the value begins with '0x', it is assumed the value
+is a valid 2s complement integer in hexadecimal. If the value is signed (i.e. '-0x'),
+an error will be generated.
+
+=item hex
+
+If the value begins with '0x' or '-0x', it is converted to a valid 2s complement
+integer and encoded.
+
+=back
 
 =back
 
@@ -153,10 +177,31 @@ The value returned will be the raw encoding as extracted from the PDU.
 
 =item bigint
 
-If during decoding any big integers are discovered (integers greater
-than 32 bits), they will be decoded into big integer objects. This option
-controls the big integer class into which the objects will be blessed.
-The default is to use Math::BigInt.
+If during decoding any big integers are discovered (integers greater than
+32 bits), this option controls how they will be decoded.  Either the name
+of a big integer class may be specified or twos/hex.
+The default is class C<Math::BigInt>.
+
+=over 4
+
+=item I<BigInt::Class>
+
+The big integer class which large integers will be blessed into.  Any big integer
+class that overloads multiplication and addition should be compatible. The default
+is C<Math::BigInt>.
+
+=item twos
+
+Decode large integers directly into a hex string with a '0x' prefix as a 2s
+complement integer. This is a good option if blessed objects in the decoded
+perl structure are undesirable. Because no conversions are needed, it is
+also faster.
+
+=item hex
+
+Decode large integers directly into a signed hex string with a '0x' or '-0x' prefix.
+Though not as fast as twos, this is a fast option directly compatible with
+Math::BigInt C<from_hex> and C<as_hex> methods.
 
 =item null
 
@@ -361,6 +406,20 @@ given file handle, or C<STDERR> if the handle is not given.
 
 =back
 
+=head2 Hex Conversion Functions
+
+=over 4
+
+=item hex2twos
+
+Converts a signed hex string to a 2s complement hex string.
+
+=item twos2hex
+
+Converts a 2s complement hex string to a signed hex string.
+
+=back
+
 =head1 EXPORT TAGS
 
 =over 4
@@ -389,6 +448,10 @@ asn_recv, asn_send, asn_read, asn_write, asn_get, asn_ready
 =item :tag
 
 asn_tag, asn_decode_tag, asn_encode_tag, asn_decode_length, asn_encode_length
+
+=item :hex
+
+hex2twos, twos2hex
 
 =back
 

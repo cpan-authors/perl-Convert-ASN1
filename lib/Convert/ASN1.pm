@@ -34,7 +34,9 @@ BEGIN {
 		 ASN_UNIVERSAL   ASN_APPLICATION  ASN_CONTEXT      ASN_PRIVATE
 		 ASN_PRIMITIVE   ASN_CONSTRUCTOR  ASN_LONG_LEN     ASN_EXTENSION_ID ASN_BIT)],
 
-    tag   => [qw(asn_tag asn_decode_tag2 asn_decode_tag asn_encode_tag asn_decode_length asn_encode_length)]
+    tag   => [qw(asn_tag asn_decode_tag2 asn_decode_tag asn_encode_tag asn_decode_length asn_encode_length)],
+    
+    hex   => [qw(hex2twos twos2hex)]
   );
 
   @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
@@ -378,6 +380,9 @@ sub num_length {
 
 sub i2osp {
     my($num, $biclass) = @_;
+    if (ref($num) eq 'Math::BigInt') {
+      return hex2os( $num->as_hex($num) );
+    }
     eval "use $biclass";
     $num = $biclass->new($num);
     my $neg = $num < 0
@@ -398,6 +403,9 @@ sub i2osp {
 sub os2ip {
     my($os, $biclass) = @_;
     eval "require $biclass";
+    if ($biclass eq 'Math::BigInt') {
+      return $biclass->new( os2hex($os) );
+    }
     my $base = $biclass->new(256);
     my $result = $biclass->new(0);
     my $neg = unpack("C",$os) >= 0x80
@@ -406,6 +414,68 @@ sub os2ip {
       $result = ($result * $base) + $_;
     }
     return $neg ? ($result + 1) * -1 : $result;
+}
+
+# Convert from a twos complement octet string to a signed hex string
+
+sub os2hex {
+    my $os = $_[0];
+    my $len = length($os);
+    # deterime if number is negative
+    my $neg = unpack("C",$os) >= 0x80;
+    if ($neg) {
+      $os ^= "\xff" x $len;
+      for(my$l=$len-1;$l>=0;$l--) {
+        vec($os,$l,8) = vec($os,$l,8) + 1;
+        last if vec($os,$l,8);
+      }
+    }
+    # trim unnecessary leading zeros
+    $os =~ s/^\x00+(?!$)//;
+    my $result = $neg ? "-0x" : "0x";
+    $result .= unpack("H*",$os);
+    return $result;
+}
+
+# Convert from a signed hex string to a twos complement octet string
+
+sub hex2os {
+    my $num = $_[0];
+    my $neg = substr($num,0,1) eq '-';
+    my $hx = substr($num,$neg ? 3 : 2);
+    my $pad = (length($hx) % 2) ? '0' : '';
+    my $os = pack("H*",$pad . $hx);
+    # trim to minimum size
+    $os =~ s/^\x00+(?!$)//;
+    return $os if $os eq "\x00";
+    my $len = length $os;
+    # 2s complement
+    if ($neg) {
+      $os ^= "\xff" x $len;
+      for(my$l=$len-1;$l>=0;$l--) {
+        vec($os,$l,8) = vec($os,$l,8) + 1;
+        last if vec($os,$l,8);
+      }
+    }
+    # verify most significant bit is properly signed
+    my $msb = (vec($os,0,8) & 0x80) ? 0 : 255;
+    $os = pack("C",$msb) . $os if $msb xor !$neg;
+    return $os;
+}
+
+# Convert from a signed hex string to a twos complement hex string
+
+sub hex2twos {
+    my $os = hex2os($_[0]);
+    return '0x'.unpack('H*',$os);
+}
+
+# Convert from a twos complement hex string to a signed hex string
+
+sub twos2hex {
+    my $s = $_[0] =~ m/^0x/i ? 2 : 0;
+    my $os = pack('H*',substr($_[0],$s));
+    return os2hex($os);
 }
 
 # Given a class and a tag, calculate an integer which when encoded

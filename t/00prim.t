@@ -6,7 +6,7 @@
 
 use Convert::ASN1 qw(:all);
 
-print "1..186\n";
+print "1..217\n";
 
 BEGIN { require './t/funcs.pl' }
 
@@ -73,24 +73,32 @@ foreach $val (0,1,-99) {
 ## INTEGER (tests 13 - 21)
 ##
 
-my %INTEGER = (
-  pack("C*", 0x02, 0x02, 0x00, 0x80), 	      128,
-  pack("C*", 0x02, 0x01, 0x80), 	      -128,
-  pack("C*", 0x02, 0x02, 0xff, 0x01), 	      -255,
-  pack("C*", 0x02, 0x01, 0x00), 	      0,
-  pack("C*", 0x02, 0x03, 0x66, 0x77, 0x99),   0x667799,
-  pack("C*", 0x02, 0x02, 0xFE, 0x37),	     -457,
-  pack("C*", 0x02, 0x04, 0x40, 0x00, 0x00, 0x00),	     2**30,
-  pack("C*", 0x02, 0x04, 0xC0, 0x00, 0x00, 0x00),	     -2**30,
+my @INTEGER = (
+  pack("C*", 0x02, 0x02, 0x00, 0x80), 	      [128,'0x80'],
+  pack("C*", 0x02, 0x01, 0x80), 	      [-128,'-0x80'],
+  pack("C*", 0x02, 0x02, 0xff, 0x01), 	      [-255,'-0xff'],
+  pack("C*", 0x02, 0x01, 0x00), 	      [0,'0x00'],
+  pack("C*", 0x02, 0x01, 0x00), 	      ['-0','-0x00'],
+  pack("C*", 0x02, 0x03, 0x66, 0x77, 0x99),   [0x667799,'0x667799'],
+  pack("C*", 0x02, 0x02, 0xFE, 0x37),	     [-457,'-0x01c9'],
+  pack("C*", 0x02, 0x04, 0x40, 0x00, 0x00, 0x00),	     [2**30,'0x40000000'],
+  pack("C*", 0x02, 0x04, 0xC0, 0x00, 0x00, 0x00),	     [-2**30,'-0x40000000'],
 );
 
-while(($result,$val) = each %INTEGER) {
-  print "# INTEGER $val\n";
+for (my$i=0;$i<=$#INTEGER;$i++)
+{
+  my $result = $INTEGER[$i];
+  my $val = $INTEGER[++$i];
+  print "# INTEGER $val->[0] / $val->[1]\n";
 
   btest $test++, $asn->prepare(' integer INTEGER') or warn $asn->error;
-  stest $test++, $result, $asn->encode(integer => $val) or warn $asn->error;
+  stest $test++, $result, $asn->encode(integer => $val->[0]) or warn $asn->error;
   btest $test++, $ret = $asn->decode($result) or warn $asn->error;
-  ntest $test++, $val, $ret->{integer};
+  ntest $test++, $val->[0], $ret->{integer};
+  ## hex encode
+  stest $test++, $result, $asn->encode(integer => $val->[1]) or warn $asn->error;
+  btest $test++, $ret = $asn->decode($result) or warn $asn->error;
+  ntest $test++, $val->[0], $ret->{integer};
 
 }
 

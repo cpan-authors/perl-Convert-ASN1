@@ -298,8 +298,19 @@ sub _dec_integer {
 
   my $buf = substr($_[4],$_[5],$_[6]);
   my $tmp = unpack("C",$buf) & 0x80 ? pack("C",255) : pack("C",0);
+  my $obj = $_[0];
+  my $bi = $obj->{decode_bigint} || 'Math::BigInt';
+
   if ($_[6] > 4) {
-      $_[3] = os2ip($buf, $_[0]->{decode_bigint} || 'Math::BigInt');
+      if ($bi eq 'twos') {
+        $_[3] = '0x'.unpack('H*',$buf);
+      }
+      elsif ($bi eq 'hex') {
+        $_[3] = os2hex($buf);
+      }
+      else {
+        $_[3] = os2ip($buf, $bi);
+      }
   } else {
       # N unpacks an unsigned value
       $_[3] = unpack("l",pack("l",unpack("N", $tmp x (4-$_[6]) . $buf)));
