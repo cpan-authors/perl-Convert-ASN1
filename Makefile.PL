@@ -22,7 +22,9 @@ my %WriteMakefileArgs = (
   "VERSION" => "0.34",
   "test" => {
     "TESTS" => "t/*.t"
-  }
+  },
+  "DEFINE" => "",
+  "INC"    => "-I.",
 );
 
 
