@@ -2,6 +2,7 @@
 
 use Convert::ASN1 qw(:io);
 use IO::Socket;
+use File::Temp ();
 
 print "1..11\n";
 
@@ -14,11 +15,11 @@ my  $result = pack("C*", 0x30, 0x3D, 0x04, 0x04, 0x46, 0x72, 0x65, 0x64,
 			 0x73, 0x74, 0x04, 0x02, 0x6F, 0x66, 0x04, 0x07,
 			 0x73, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x73);
 
-($file = $0) =~ s/t$/dat/;
-open(OUT,"> $file");
-asn_write(*OUT, $result);
-asn_write(*OUT, $result);
-close(OUT);
+$fd = File::Temp->new('UNLINK' => 0);
+$file = $fd->filename;
+asn_write($fd, $result);
+asn_write($fd, $result);
+$fd->close;
 
 open(IN,"< $file");
 sysread(IN,$buffer,1024);
