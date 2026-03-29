@@ -36,10 +36,11 @@ my @decode = (
   undef, # CHOICE
   \&_dec_object_id,
   \&_dec_bcd,
+  \&_dec_bmp,
 );
 
 my @ctr;
-@ctr[opBITSTR, opSTRING, opUTF8] = (\&_ctr_bitstring,\&_ctr_string,\&_ctr_string);
+@ctr[opBITSTR, opSTRING, opUTF8, opBMP] = (\&_ctr_bitstring,\&_ctr_string,\&_ctr_string,\&_ctr_string);
 
 # Per X.690: inner segments of constructed primitives always use the universal
 # primitive tag, not any implicit/application tag that may wrap the outer value.
@@ -47,10 +48,11 @@ my @ctr;
 #   8.7.3.2: OCTET STRING segments use UNIVERSAL 4 (OCTET STRING)
 #   8.23.3:  other string types (incl. UTF8String) also use UNIVERSAL 4
 my @ctr_inner_tag;
-@ctr_inner_tag[opBITSTR, opSTRING, opUTF8] = (
+@ctr_inner_tag[opBITSTR, opSTRING, opUTF8, opBMP] = (
   asn_encode_tag(ASN_BIT_STR),   # BIT STRING inner segments (X.690 8.6.4.1)
   asn_encode_tag(ASN_OCTET_STR), # OCTET STRING inner segments (X.690 8.7.3.2)
   asn_encode_tag(ASN_OCTET_STR), # UTF8String inner segments are OCTET STRING (X.690 8.23.3)
+  asn_encode_tag(ASN_OCTET_STR), # BMPString inner segments are OCTET STRING (X.690 8.23.3)
 );
 
 
@@ -636,6 +638,21 @@ sub _dec_utf8 {
   }
   else {
     $_[3] = (substr($_[4],$_[5],$_[6]) =~ /(.*)/s)[0];
+  }
+
+  1;
+}
+
+
+sub _dec_bmp {
+# 0      1    2       3     4     5     6
+# $optn, $op, $stash, $var, $buf, $pos, $len
+
+  if (CHECK_UTF8) {
+    $_[3] = Encode::decode('UCS-2BE', substr($_[4],$_[5],$_[6]));
+  }
+  else {
+    $_[3] = substr($_[4],$_[5],$_[6]);
   }
 
   1;
