@@ -38,6 +38,7 @@ my @encode = (
   \&_enc_choice,
   \&_enc_object_id,
   \&_enc_bcd,
+  \&_enc_bmp,
 );
 
 
@@ -353,6 +354,22 @@ sub _enc_utf8 {
     my $tmp = $_[3];
     utf8::upgrade($tmp) unless Encode::is_utf8($tmp);
     utf8::encode($tmp);
+    $_[4] .= asn_encode_length(length $tmp);
+    $_[4] .= $tmp;
+  }
+  else {
+    $_[4] .= asn_encode_length(length $_[3]);
+    $_[4] .= $_[3];
+  }
+}
+
+
+sub _enc_bmp {
+# 0      1    2       3     4     5      6
+# $optn, $op, $stash, $var, $buf, $loop, $path
+
+  if (CHECK_UTF8) {
+    my $tmp = Encode::encode('UCS-2BE', $_[3]);
     $_[4] .= asn_encode_length(length $tmp);
     $_[4] .= $tmp;
   }
