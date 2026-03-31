@@ -142,6 +142,14 @@ sub find {
   my $what = shift;
   return unless exists $self->{tree}{$what};
   my %new = %$self;
+  # Deep-copy options so the returned object does not share mutable
+  # state (handlers, oidtable) with the parent.  Without this, callers
+  # that store the result back into the parent's config inadvertently
+  # create reference cycles that prevent garbage collection.
+  # See https://github.com/gbarr/perl-Convert-ASN1/issues/49
+  $new{options} = { %{$self->{options}} };
+  $new{options}{oidtable} = { %{$self->{options}{oidtable}} } if $self->{options}{oidtable};
+  $new{options}{handlers} = { %{$self->{options}{handlers}} } if $self->{options}{handlers};
   $new{script} = $new{tree}->{$what};
   bless \%new, ref($self);
 }

@@ -732,10 +732,20 @@ sub parse {
   $tagdefault = $_[1] eq 'EXPLICIT' ? 1 : 0;
   ($pos,$last_pos,@stacked) = ();
 
-  eval {
+  my $result = eval {
     local $SIG{__DIE__};
     compile(verify(yyparse()));
-  }
+  };
+
+  # Clear parser globals to prevent them from holding references to the
+  # parsed tree, which would keep it alive even after the caller drops
+  # its own reference (see https://github.com/gbarr/perl-Convert-ASN1/issues/49)
+  $yyval = undef;
+  @yyvs = ();
+  @yyss = ();
+  $yylval = undef;
+
+  $result;
 }
 
 sub compile_one {
