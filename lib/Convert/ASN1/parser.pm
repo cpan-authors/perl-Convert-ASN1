@@ -50,8 +50,8 @@ my %base_type = (
   ISO646String      => [ asn_encode_tag(ASN_UNIVERSAL | 26), opSTRING ],
   GeneralString     => [ asn_encode_tag(ASN_UNIVERSAL | 27), opSTRING ],
   CharacterString   => [ asn_encode_tag(ASN_UNIVERSAL | 28), opSTRING ],
-  UniversalString   => [ asn_encode_tag(ASN_UNIVERSAL | 28), opSTRING ],
-  BMPString         => [ asn_encode_tag(ASN_UNIVERSAL | 30), opSTRING ],
+  UniversalString   => [ asn_encode_tag(ASN_UNIVERSAL | 28), opUNISTR ],
+  BMPString         => [ asn_encode_tag(ASN_UNIVERSAL | 30), opBMPSTR ],
   BCDString         => [ asn_encode_tag(ASN_OCTET_STR), opBCD ],
 
   CHOICE => [ '', opCHOICE ],

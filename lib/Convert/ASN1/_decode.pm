@@ -36,10 +36,13 @@ my @decode = (
   undef, # CHOICE
   \&_dec_object_id,
   \&_dec_bcd,
+  undef, # EXTENSIONS
+  \&_dec_bmpstring,
+  \&_dec_unistring,
 );
 
 my @ctr;
-@ctr[opBITSTR, opSTRING, opUTF8] = (\&_ctr_bitstring,\&_ctr_string,\&_ctr_string);
+@ctr[opBITSTR, opSTRING, opUTF8, opBMPSTR, opUNISTR] = (\&_ctr_bitstring,\&_ctr_string,\&_ctr_string,\&_ctr_string,\&_ctr_string);
 
 # Per X.690: inner segments of constructed primitives always use the universal
 # primitive tag, not any implicit/application tag that may wrap the outer value.
@@ -636,6 +639,38 @@ sub _dec_utf8 {
   }
   else {
     $_[3] = (substr($_[4],$_[5],$_[6]) =~ /(.*)/s)[0];
+  }
+
+  1;
+}
+
+
+sub _dec_bmpstring {
+# 0      1    2       3     4     5     6
+# $optn, $op, $stash, $var, $buf, $pos, $len
+# BMPString is UCS-2 Big Endian encoded
+
+  if (CHECK_UTF8) {
+    $_[3] = Encode::decode('UCS-2-BE', substr($_[4],$_[5],$_[6]));
+  }
+  else {
+    $_[3] = substr($_[4],$_[5],$_[6]);
+  }
+
+  1;
+}
+
+
+sub _dec_unistring {
+# 0      1    2       3     4     5     6
+# $optn, $op, $stash, $var, $buf, $pos, $len
+# UniversalString is UCS-4 Big Endian encoded
+
+  if (CHECK_UTF8) {
+    $_[3] = Encode::decode('UCS-4-BE', substr($_[4],$_[5],$_[6]));
+  }
+  else {
+    $_[3] = substr($_[4],$_[5],$_[6]);
   }
 
   1;
