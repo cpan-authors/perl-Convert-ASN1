@@ -14,7 +14,9 @@ my %WriteMakefileArgs = (
   "DISTNAME" => "Convert-ASN1",
   "LICENSE" => "perl",
   "NAME" => "Convert::ASN1",
-  "PREREQ_PM" => {},
+  "PREREQ_PM" => {
+    "Time::Local" => "1.27"
+  },
   "TEST_REQUIRES" => {
     "Math::BigInt" => "1.997",
     "Test::More" => "0.90"
@@ -28,7 +30,8 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "Math::BigInt" => "1.997",
-  "Test::More" => "0.90"
+  "Test::More" => "0.90",
+  "Time::Local" => "1.27"
 );
 
 

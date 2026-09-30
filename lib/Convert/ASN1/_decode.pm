@@ -599,15 +599,13 @@ sub _dec_time {
      =~ /^((?:\d\d)?\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)((?:\.\d{1,3})?)(([-+])(\d\d)(\d\d)|Z)/)
      or die "bad time format";
 
-  if ($bits[0] < 100) {
-    $bits[0] += 100 if $bits[0] < 50;
-  }
-  else {
-    $bits[0] -= 1900;
+  # two digit year (UTCTime), RFC 5280 4.1.2.5.1: 50 - 99 is 19YY, 00 - 49 is 20YY
+  if (length $bits[0] == 2) {
+    $bits[0] += ($bits[0] < 50) ? 2000 : 1900;
   }
   $bits[1] -= 1;
   require Time::Local;
-  my $time = Time::Local::timegm(@bits[5,4,3,2,1,0]);
+  my $time = Time::Local::timegm_modern(@bits[5,4,3,2,1,0]);
   $time += $bits[6] if length $bits[6];
   my $offset = 0;
   if ($bits[7] ne 'Z') {

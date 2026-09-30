@@ -1,3 +1,5 @@
+requires "Time::Local" => "1.27";
+
 on 'configure' => sub {
   requires "ExtUtils::MakeMaker" => "0";
 };
