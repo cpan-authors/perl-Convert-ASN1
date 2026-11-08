@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+Bug Fixes
+
+Thanks to Oliver Welter (@oliwel)
+  * Fix year interpretation when decoding UTCTime and GeneralizedTime- #83
+
 0.34 -- Mon Aug 07 19:46:22 ADT 2023
 
 Bug Fixes
