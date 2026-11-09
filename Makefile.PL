@@ -21,7 +21,7 @@ my %WriteMakefileArgs = (
     "Math::BigInt" => "1.997",
     "Test::More" => "0.90"
   },
-  "VERSION" => "0.35",
+  "VERSION" => "0.36",
   "test" => {
     "TESTS" => "t/*.t"
   }
