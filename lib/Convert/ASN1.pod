@@ -188,6 +188,19 @@ rejected as invalid.
   $asn->configure(decode => { max_int_len => 4096 });   # allow up to 32767-bit
   $asn->configure(decode => { max_int_len => 0    });   # no limit (not recommended)
 
+=item max_depth
+
+Maximum number of nested C<_decode> calls permitted before decoding is aborted
+with an error. Each SEQUENCE, SET, EXPLICIT tag, constructed string, or CHOICE
+without a tag adds one level. Prevents a remote peer from causing unbounded
+stack growth by sending deeply nested structures. Defaults to C<99>, which is
+sufficient for any real-world X.509 certificate, LDAP message, or SNMP PDU,
+and stays below Perl's built-in deep-recursion warning threshold of 100.
+Set to C<0> to disable the limit; negative values are rejected as invalid.
+
+  $asn->configure(decode => { max_depth => 256 });   # allow deeper nesting
+  $asn->configure(decode => { max_depth => 0   });   # no limit (not recommended)
+
 =item null
 
 The value to decode ASN.1 NULL types into.

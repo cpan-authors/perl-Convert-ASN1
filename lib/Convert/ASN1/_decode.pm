@@ -44,6 +44,13 @@ my @ctr;
 
 sub _decode {
   my ($optn, $ops, $stash, $pos, $end, $seqof, $larr) = @_;
+
+  my $max_depth = exists $optn->{decode_max_depth} ? $optn->{decode_max_depth} : 99;
+  local $optn->{_decode_depth} = ($optn->{_decode_depth} || 0) + 1;
+  die "decode: max_depth must not be negative\n" if $max_depth < 0;
+  die "decode error (nesting depth limit exceeded)\n"
+      if $max_depth > 0 && $optn->{_decode_depth} > $max_depth;
+
   my $idx = 0;
 
   # we try not to copy the input buffer at any time
@@ -137,8 +144,16 @@ sub _decode {
               $handler ||= $optn->{handlers}{$op->[cVAR]}{$stash->{$op->[cDEFINE]}};
             }
 
-	    ($seqof ? $seqof->[$idx++] : ref($stash) eq 'SCALAR' ? $$stash : $stash->{$var})
-	      = $handler ? $handler->decode(substr($buf,$pos,$len)) : substr($buf,$pos,$len);
+	    if ($handler) {
+	      local $handler->{options}{_decode_depth} = $optn->{_decode_depth};
+	      local $handler->{options}{decode_max_depth} = $max_depth
+	          unless exists $handler->{options}{decode_max_depth};
+	      ($seqof ? $seqof->[$idx++] : ref($stash) eq 'SCALAR' ? $$stash : $stash->{$var})
+	        = $handler->decode(substr($buf,$pos,$len));
+	    } else {
+	      ($seqof ? $seqof->[$idx++] : ref($stash) eq 'SCALAR' ? $$stash : $stash->{$var})
+	        = substr($buf,$pos,$len);
+	    }
 
 	    $pos += $len;
 
@@ -206,7 +221,11 @@ sub _decode {
 
 		  @{$nstash}{keys %tmp_stash} = values %tmp_stash;
 
-		} or next;
+		} or do {
+		  die $@ if $@ =~ /nesting depth limit exceeded/;
+		  next;
+		};
+
 
 		$pos = $npos+$len+$indef;
 
