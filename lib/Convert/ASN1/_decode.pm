@@ -281,7 +281,13 @@ sub _dec_integer {
   my $buf = substr($_[4],$_[5],$_[6]);
   my $tmp = unpack("C",$buf) & 0x80 ? pack("C",255) : pack("C",0);
   if ($_[6] > 4) {
-      $_[3] = os2ip($buf, $_[0]->{decode_bigint} || 'Math::BigInt');
+      my $max = ($_[0] && exists $_[0]->{decode_max_int_len})
+                  ? $_[0]->{decode_max_int_len}
+                  : 1025;
+      die "decode: max_int_len must not be negative\n" if $max < 0;
+      die "INTEGER too large (length $_[6] exceeds max_int_len $max)\n"
+          if $max && $_[6] > $max;
+      $_[3] = os2ip($buf, ($_[0] && $_[0]->{decode_bigint}) || 'Math::BigInt');
   } else {
       # N unpacks an unsigned value
       $_[3] = unpack("l",pack("l",unpack("N", $tmp x (4-$_[6]) . $buf)));

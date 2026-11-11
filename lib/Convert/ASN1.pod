@@ -161,6 +161,18 @@ than 32 bits), they will be decoded into big integer objects. This option
 controls the big integer class into which the objects will be blessed.
 The default is to use Math::BigInt.
 
+=item max_int_len
+
+Maximum number of content bytes accepted for an INTEGER or ENUMERATED element
+greater than 32 bits before decoding is aborted with an error. Prevents a
+remote peer from causing quadratic CPU usage by sending a very large integer
+value. Defaults to C<1025> (enough for an RSA-8192 modulus, which requires a
+leading sign byte). Set to C<0> to disable the limit; negative values are
+rejected as invalid.
+
+  $asn->configure(decode => { max_int_len => 4096 });   # allow up to 32768-bit
+  $asn->configure(decode => { max_int_len => 0    });   # no limit (not recommended)
+
 =item null
 
 The value to decode ASN.1 NULL types into.
