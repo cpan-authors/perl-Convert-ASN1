@@ -372,6 +372,8 @@ sub i2osp {
     my($num, $biclass) = @_;
     eval "use $biclass";
     $num = $biclass->new($num);
+    die "INTEGER value is not an integer\n"
+        if $num->can('is_nan') && $num->is_nan;
     my $neg = $num < 0
       and $num = abs($num+1);
     my $base = $biclass->new(256);

@@ -122,6 +122,21 @@ converted into a big integer object. This option controls the big
 integer class into which the objects will be blessed. The default
 is to use Math::BigInt
 
+=item max_int_len
+
+Maximum number of content bytes permitted for an INTEGER or ENUMERATED value
+greater than 32 bits before encoding is aborted with an error. Prevents
+application code that forwards an untrusted integer (such as a search
+size-limit or paged-results count) from triggering quadratic CPU usage in the
+bigint conversion loop. Defaults to C<1025> (enough for an RSA-8192 modulus,
+which requires a leading sign byte). Set to C<0> to disable the limit; negative
+values are rejected as invalid. The check is applied to the final
+two's-complement byte count, consistent with the decode-side C<max_int_len>
+limit.
+
+  $asn->configure(encode => { max_int_len => 4096 });   # allow up to 32767-bit
+  $asn->configure(encode => { max_int_len => 0    });   # no limit (not recommended)
+
 =back
 
 Decode options
