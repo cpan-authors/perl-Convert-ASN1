@@ -77,6 +77,10 @@ sub asn_recv { # $socket, $buffer, $flags
   }
 
   if (defined $peer) {
+    my $type = getsockopt($_[0], SOL_SOCKET, SO_TYPE);
+    my $discard = defined $type && unpack('i', $type) == SOCK_DGRAM
+                  && !($_[2] & MSG_PEEK);
+
     if ($len > length $buf) {
       # Check we can read the whole element. Peek in doubling steps so the
       # buffer perl allocates is bounded by the data available, not by the
@@ -91,12 +95,15 @@ sub asn_recv { # $socket, $buffer, $flags
       }
 
       if ($len > length $buf) {
-	# Cannot get whole element
+	# Cannot get whole element; discard the datagram so it doesn't wedge the queue
+	recv($_[0], my $junk, length $buf, 0) if $discard;
 	$_[1]='';
 	return $peer;
       }
     }
     elsif ($len == 0) {
+      # Discard the datagram so it doesn't wedge the queue
+      recv($_[0], my $junk, length($buf) || 1, 0) if $discard;
       $_[1] = '';
       return $peer;
     }

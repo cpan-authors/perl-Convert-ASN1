@@ -242,7 +242,9 @@ as the C<recv> function in perl itself.
 If the available data does not contain a complete, decodable BER element
 (truncated tag, incomplete length field, or declared length exceeding the
 datagram), BUFFER is set to the empty string and the sender address is
-returned.
+returned. On a SOCK_DGRAM socket the offending datagram is also removed
+from the queue, so it cannot block the datagrams behind it, unless FLAGS
+includes MSG_PEEK, in which case it is left in place.
 
 It is recommended that if the socket is of type SOCK_DGRAM then C<recv>
 be called directly instead of calling C<asn_recv>.
