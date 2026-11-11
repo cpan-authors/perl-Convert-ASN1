@@ -46,7 +46,7 @@ sub asn_recv { # $socket, $buffer, $flags
 
     # If we can decode a tag and length we can determine the length
     ($tb,$tmp) = asn_decode_tag(substr($buf,$pos));
-    unless ($tb || $pos+$tb < length $buf) {
+    unless ($tb && ($pos+$tb < length $buf)) {
       next MORE if $n == length $buf;
       last MORE;
     }
@@ -70,13 +70,25 @@ sub asn_recv { # $socket, $buffer, $flags
 	last MORE;
       }
     }
+    else {
+      next MORE if $n == length $buf;
+      last MORE;
+    }
   }
 
   if (defined $peer) {
     if ($len > length $buf) {
-      # Check we can read the whole element
-      goto error
-	unless defined($peer = recv($_[0],$buf,$len,MSG_PEEK));
+      # Check we can read the whole element. Peek in doubling steps so the
+      # buffer perl allocates is bounded by the data available, not by the
+      # declared length
+      my $ask = length($buf) || 64;
+      while ($len > length $buf) {
+        $ask *= 2;
+        $ask = $len if $ask > $len;
+        goto error
+          unless defined($peer = recv($_[0],$buf,$ask,MSG_PEEK));
+        last if length($buf) < $ask;
+      }
 
       if ($len > length $buf) {
 	# Cannot get whole element
