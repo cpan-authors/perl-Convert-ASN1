@@ -369,10 +369,15 @@ sub _dec_real {
     else {
       $expLen++;
     }
+
+    my $overhead = $estart - $_[5];   # 1 short-form, 2 long-form
+    # an exponent over 4 bytes would become a bigint and make pow() run unbounded
+    die "REAL decode error\n" if $expLen > 4 || $expLen > $_[6] - $overhead;
+
     _dec_integer(undef, undef, undef, $exp, $_[4],$estart,$expLen);
 
     my $mant = 0.0;
-    for (reverse unpack("C*",substr($_[4],$estart+$expLen,$_[6]-1-$expLen))) {
+    for (reverse unpack("C*",substr($_[4],$estart+$expLen,$_[6]-$overhead-$expLen))) {
       $exp +=8, $mant = (($mant+$_) / 256) ;
     }
 

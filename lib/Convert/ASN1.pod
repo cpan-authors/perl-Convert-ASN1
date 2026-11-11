@@ -170,7 +170,7 @@ value. Defaults to C<1025> (enough for an RSA-8192 modulus, which requires a
 leading sign byte). Set to C<0> to disable the limit; negative values are
 rejected as invalid.
 
-  $asn->configure(decode => { max_int_len => 4096 });   # allow up to 32768-bit
+  $asn->configure(decode => { max_int_len => 4096 });   # allow up to 32767-bit
   $asn->configure(decode => { max_int_len => 0    });   # no limit (not recommended)
 
 =item null
