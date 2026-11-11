@@ -300,6 +300,11 @@ sub _dec_bitstring {
 # 0      1    2       3     4     5     6
 # $optn, $op, $stash, $var, $buf, $pos, $len
 
+  if ($_[6] < 1) {
+    $_[3] = ["", 0];
+    return 1;
+  }
+  die "BIT STRING decode error\n" if unpack("C", substr($_[4],$_[5],1)) > 7;
   $_[3] = [ substr($_[4],$_[5]+1,$_[6]-1), ($_[6]-1)*8-unpack("C",substr($_[4],$_[5],1)) ];
   1;
 }
