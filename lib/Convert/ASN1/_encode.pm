@@ -190,6 +190,18 @@ sub _enc_object_id {
 
   my @data = ($_[3] =~ /(\d+)/g);
 
+  # pack "w" is quadratic in arc length, so bound each arc first
+  my $max = exists $_[0]->{encode_max_oid_arc_len}
+              ? $_[0]->{encode_max_oid_arc_len}
+              : 32;
+  die "encode: max_oid_arc_len must not be negative\n" if $max < 0;
+  if ($max) {
+    # any arc of this many digits fits in $max bytes: 2.107 < 7 * log10(2)
+    my $digits = int($max * 2.107);
+    die "OBJECT IDENTIFIER arc too large\n"
+        if grep { length > $digits } @data;
+  }
+
   if ($_[1]->[cTYPE] == opOBJID) {
     if(@data < 2) {
       @data = (0);

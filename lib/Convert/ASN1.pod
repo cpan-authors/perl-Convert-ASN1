@@ -137,6 +137,19 @@ limit.
   $asn->configure(encode => { max_int_len => 4096 });   # allow up to 32767-bit
   $asn->configure(encode => { max_int_len => 0    });   # no limit (not recommended)
 
+=item max_oid_arc_len
+
+Maximum size, in encoded bytes, of a single OBJECT IDENTIFIER or RELATIVE-OID
+arc before encoding is aborted with an error. ASN.1 places no upper bound on
+an arc, but the time to encode one grows with the square of its length.
+Defaults to C<32> (224 bits; a 128-bit UUID arc needs 19 bytes). The check is
+made on the number of decimal digits, so an arc within a few bits of the limit
+may be rejected. Set to C<0> to disable the limit; negative values are
+rejected as invalid.
+
+  $asn->configure(encode => { max_oid_arc_len => 64 });   # allow up to 448-bit arcs
+  $asn->configure(encode => { max_oid_arc_len => 0  });   # no limit (not recommended)
+
 =back
 
 Decode options
@@ -200,6 +213,18 @@ Set to C<0> to disable the limit; negative values are rejected as invalid.
 
   $asn->configure(decode => { max_depth => 256 });   # allow deeper nesting
   $asn->configure(decode => { max_depth => 0   });   # no limit (not recommended)
+
+=item max_oid_arc_len
+
+Maximum size, in encoded bytes, of a single OBJECT IDENTIFIER or RELATIVE-OID
+arc before decoding is aborted with an error. ASN.1 places no upper bound on
+an arc, but the time to decode one grows with the square of its length, so a
+remote peer could otherwise consume unbounded CPU with a single large arc.
+Defaults to C<32> (224 bits; a 128-bit UUID arc needs 19 bytes). Set to C<0>
+to disable the limit; negative values are rejected as invalid.
+
+  $asn->configure(decode => { max_oid_arc_len => 64 });   # allow up to 448-bit arcs
+  $asn->configure(decode => { max_oid_arc_len => 0  });   # no limit (not recommended)
 
 =item null
 

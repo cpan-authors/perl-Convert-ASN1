@@ -351,6 +351,20 @@ sub _dec_object_id {
 # 0      1    2       3     4     5     6
 # $optn, $op, $stash, $var, $buf, $pos, $len
 
+  # unpack "w" is quadratic in arc length, so bound each arc first
+  my $max = exists $_[0]->{decode_max_oid_arc_len}
+              ? $_[0]->{decode_max_oid_arc_len}
+              : 32;
+  die "decode: max_oid_arc_len must not be negative\n" if $max < 0;
+  if ($max) {
+    my $oid = substr($_[4],$_[5],$_[6]);
+    # every byte of an arc except its last has the high bit set
+    while ($oid =~ /[\x80-\xff]+/g) {
+      die "OBJECT IDENTIFIER decode error (arc too large)\n"
+          if $+[0] - $-[0] >= $max;
+    }
+  }
+
   my @data = unpack("w*",substr($_[4],$_[5],$_[6]));
   if ($_[1]->[cTYPE] == opOBJID and @data > 1) {
     if ($data[0] < 40) {
