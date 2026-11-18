@@ -12,6 +12,10 @@ BEGIN {
   eval { require bytes } and 'bytes'->import
 }
 
+# Largest single read, so the buffer perl allocates tracks the data
+# received and not the length an element declares
+my $MAX_READ = 65536;
+
 sub asn_recv { # $socket, $buffer, $flags
 
   my $peer;
@@ -153,7 +157,7 @@ sub asn_read { # $fh, $buffer, $offset
     $need = ($pos + ($depth * 2)) || 2;
 
     while(($n = $need - length $_[1]) > 0) {
-      $e = sysread($_[0],$_[1],$n,length $_[1]) or
+      $e = sysread($_[0],$_[1],($n > $MAX_READ ? $MAX_READ : $n),length $_[1]) or
 	goto READ_ERR;
     }
 
@@ -164,7 +168,7 @@ sub asn_read { # $fh, $buffer, $offset
       do {
         $need++;
 	while(($n = $need - length $_[1]) > 0) {
-	  $e = sysread($_[0],$_[1],$n,length $_[1]) or
+	  $e = sysread($_[0],$_[1],($n > $MAX_READ ? $MAX_READ : $n),length $_[1]) or
 	      goto READ_ERR;
 	}
 	$ch = unpack("C",substr($_[1],$pos++,1));
@@ -174,7 +178,7 @@ sub asn_read { # $fh, $buffer, $offset
     $need = $pos + 1;
 
     while(($n = $need - length $_[1]) > 0) {
-      $e = sysread($_[0],$_[1],$n,length $_[1]) or
+      $e = sysread($_[0],$_[1],($n > $MAX_READ ? $MAX_READ : $n),length $_[1]) or
 	  goto READ_ERR;
     }
 
@@ -188,7 +192,7 @@ sub asn_read { # $fh, $buffer, $offset
       $need = $pos + $len;
 
       while(($n = $need - length $_[1]) > 0) {
-	$e = sysread($_[0],$_[1],$n,length $_[1]) or
+	$e = sysread($_[0],$_[1],($n > $MAX_READ ? $MAX_READ : $n),length $_[1]) or
 	    goto READ_ERR;
       }
 
@@ -208,7 +212,7 @@ sub asn_read { # $fh, $buffer, $offset
   }
 
   while(($n = $pos - length $_[1]) > 0) {
-    $e = sysread($_[0],$_[1],$n,length $_[1]) or
+    $e = sysread($_[0],$_[1],($n > $MAX_READ ? $MAX_READ : $n),length $_[1]) or
       goto READ_ERR;
   }
 
@@ -253,6 +257,7 @@ sub asn_get { # $fh
     }
 
     my $get = $need > 1024 ? $need : 1024;
+    $get = $MAX_READ if $get > $MAX_READ;
 
     sysread($_[0], $href->{'asn_buffer'}, $get, length $href->{'asn_buffer'})
       or return undef;
